@@ -1,0 +1,4 @@
+Emp_ID,Name,Age,Gender,Department,Join_Date,Resign_Date,Status,Salary,Location
+101,Ravi,29,Male,Sales,2020-01-10,,Active,30000,Kolhapur
+102,Anju,34,Female,HR,2019-03-12,2022-11-01,Resigned,40000,Shirol
+103,Neha,27,Female,IT,2021-07-05,,Active,50000,Jaysingpur
