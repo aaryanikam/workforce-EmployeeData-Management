@@ -1,7 +1,7 @@
-streamlit
-streamlit-authenticator
+streamlit==1.35.0
+streamlit-authenticator==0.2.3
 bcrypt
 pandas
 matplotlib
 fpdf
-st-aggrid
+streamlit-aggrid==0.3.4.post3
