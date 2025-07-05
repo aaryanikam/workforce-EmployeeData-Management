@@ -1,0 +1,7 @@
+streamlit
+streamlit-authenticator
+bcrypt
+pandas
+matplotlib
+fpdf
+st-aggrid
