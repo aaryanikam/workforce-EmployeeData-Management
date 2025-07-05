@@ -13,10 +13,12 @@ credentials = {
     "usernames": {
         "aarya": {
             "name": "Aarya Nikam",
-            "password": "THE_HASHED_PASSWORD"
+            "password": "$2b$12$7o3Rz2NxE/N6D5sTT7eF4ugTt4h7CCqz1qghXYy1xxAkg8kU9YVQ2",  # ← hashed 12345
+            "role": "admin"
         }
     }
 }
+
 
 authenticator = stauth.Authenticate(
     credentials=credentials,
@@ -29,10 +31,14 @@ authenticator = stauth.Authenticate(
 name, authentication_status, username = authenticator.login("Login", location='main')
 
 # ✅ Show login messages
-if authentication_status is False:
-    st.error("❌ Incorrect username or password")
+if authentication_status:
+    st.success(f"Welcome {name}")
+    # show dashboard
+elif authentication_status is False:
+    st.error("Incorrect username or password")
 elif authentication_status is None:
-    st.warning("Please enter your username and password")
+    st.warning("Enter your credentials")
+
 
 # ✅ Logged-in user content
 if authentication_status:
