@@ -13,7 +13,7 @@ credentials = {
     "usernames": {
         "aarya": {
             "name": "Aarya Nikam",
-            "password": "12345"  # In production, use hashed passwords
+            "password": "THE_HASHED_PASSWORD"
         }
     }
 }
