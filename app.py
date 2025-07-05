@@ -28,7 +28,8 @@ authenticator = stauth.Authenticate(
 )
 
 # ✅ Login box
-name, authentication_status, username = authenticator.login("Login", location='main')
+name, authentication_status, username = authenticator.login(location='main')
+
 
 # ✅ Show login messages
 if authentication_status:
