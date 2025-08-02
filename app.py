@@ -3,22 +3,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit_authenticator as stauth
 import base64
-import sqlite3
 from utils.pdf_export import generate_summary_pdf
 from utils.analytics import *
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 # --- LOGIN SETUP ---
 credentials = {
     "usernames": {
         "aarya": {
             "name": "Aarya Nikam",
-            "password": "$2b$12$7o3Rz2NxE/N6D5sTT7eF4ugTt4h7CCqz1qghXYy1xxAkg8kU9YVQ2",  # ← hashed 12345
+            "password": "$2b$12$cTFh0Vukq08Rl/jv9ktxS.uXfnWRE2pG2mmc2yCerP7uCY9Bckiim",  # hashed password
             "role": "admin"
         }
     }
 }
-
 
 authenticator = stauth.Authenticate(
     credentials=credentials,
@@ -28,18 +25,15 @@ authenticator = stauth.Authenticate(
 )
 
 # ✅ Login box
-name, authentication_status, username = authenticator.login(location='main')
-
+name, authentication_status, username = authenticator.login(form_name='Login', location='main')
 
 # ✅ Show login messages
 if authentication_status:
     st.success(f"Welcome {name}")
-    # show dashboard
 elif authentication_status is False:
     st.error("Incorrect username or password")
 elif authentication_status is None:
     st.warning("Enter your credentials")
-
 
 # ✅ Logged-in user content
 if authentication_status:
@@ -48,9 +42,9 @@ if authentication_status:
 
     st.title("👩‍💼 Workforce Analytics System")
 
-    # --- Load data ---
-    conn = sqlite3.connect('data/workforce.db')
-    df = pd.read_sql_query("SELECT * FROM workforce", conn)
+    # --- Load data from CSV ---
+    csv_file = 'data/workforce_data.csv'   # ✅ correct file name
+    df = pd.read_csv(csv_file)
 
     # --- Sidebar filters ---
     st.sidebar.header("🔍 Filter Employee Data")
@@ -61,66 +55,70 @@ if authentication_status:
     selected_status = st.sidebar.selectbox("Status", ["All"] + status_options)
 
     gender_options = sorted(df['Gender'].dropna().unique().tolist())
-    if "Male" not in gender_options:
-        gender_options.append("Male")
-    if "Female" not in gender_options:
-        gender_options.append("Female")
     selected_gender = st.sidebar.selectbox("Gender", ["All"] + gender_options)
 
     # --- Apply filters ---
+    filtered_df = df.copy()
     if selected_dept != "All":
-        df = df[df['Department'] == selected_dept]
+        filtered_df = filtered_df[filtered_df['Department'] == selected_dept]
     if selected_status != "All":
-        df = df[df['Status'] == selected_status]
+        filtered_df = filtered_df[filtered_df['Status'] == selected_status]
     if selected_gender != "All":
-        df = df[df['Gender'] == selected_gender]
+        filtered_df = filtered_df[filtered_df['Gender'] == selected_gender]
 
     # --- Dashboard Sections ---
     st.header("1️⃣ Raw Employee Data")
-    st.dataframe(df)
+    st.dataframe(filtered_df)
 
     st.header("2️⃣ Summary")
-    total, active, resigned = get_summary(df)
+    total, active, resigned = get_summary(filtered_df)
     st.write(f"Total Employees: {total}")
     st.write(f"Active Employees: {active}")
     st.write(f"Resigned Employees: {resigned}")
 
     st.header("3️⃣ Department-wise Employee Count")
-    st.bar_chart(department_distribution(df))
+    st.bar_chart(department_distribution(filtered_df))
 
     st.header("4️⃣ Gender Ratio")
-    gender = gender_ratio(df)
+    gender = gender_ratio(filtered_df)
     fig, ax = plt.subplots()
     ax.pie(gender, labels=gender.index, autopct='%1.1f%%')
     st.pyplot(fig)
 
     st.header("5️⃣ Average Salary by Department")
-    st.bar_chart(average_salary_by_dept(df))
+    st.bar_chart(average_salary_by_dept(filtered_df))
 
-    # --- Add Employee Form ---
+    # --- Add New Employee Form ---
     st.sidebar.header("➕ Add New Employee")
     with st.sidebar.form("add_employee_form"):
-        emp_id = st.number_input("Employee ID", step=1)
+        emp_id = st.number_input("Employee ID", step=1, format="%d")
         emp_name = st.text_input("Name")
-        age = st.number_input("Age", step=1)
+        age = st.number_input("Age", step=1, format="%d")
         gender = st.selectbox("Gender", ["Male", "Female"])
-        department = st.selectbox("Department", ["HR", "IT", "Sales"])
+        department = st.selectbox("Department", sorted(df['Department'].unique().tolist()))
         join_date = st.date_input("Join Date")
-        resign_date = st.date_input("Resign Date", disabled=True)
+        resign_date = st.date_input("Resign Date (if resigned)", disabled=True)
         status = st.selectbox("Status", ["Active", "Resigned"])
-        salary = st.number_input("Salary", step=1000)
+        salary = st.number_input("Salary", step=1000, format="%d")
         location = st.text_input("Location")
 
         submit = st.form_submit_button("Add Employee")
 
         if submit:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO workforce VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (
-                emp_id, emp_name, age, gender, department,
-                str(join_date), str(resign_date) if resign_date else "",
-                status, salary, location
-            ))
-            conn.commit()
+            new_row = {
+                'Emp_ID': emp_id,
+                'Name': emp_name,
+                'Age': age,
+                'Gender': gender,
+                'Department': department,
+                'Join_Date': str(join_date),
+                'Resign_Date': str(resign_date) if status == "Resigned" else "",
+                'Status': status,
+                'Salary': salary,
+                'Location': location
+            }
+            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            df.to_csv(csv_file, index=False)
             st.success(f"Employee {emp_name} added successfully!")
             st.experimental_rerun()
 
